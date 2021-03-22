@@ -45,6 +45,7 @@
 #include <sys/socket.h>
 #include <asm/types.h>
 #include <netinet/in.h>
+#include <pthread.h>
 
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/hci.h>
@@ -65,6 +66,7 @@ typedef struct
     int btout;
     int discovery;
     int threads;
+    int dev_id;
 } options;
 
 options opts;
@@ -306,8 +308,9 @@ static void hciScan(int dev_id, HCIA from, HCIA to, int *total)
             fflush(stdout);
         }
 
-        baswap(&bdaddr, strtoba(hcia2str(hci, buf)));
-        //dev_id = hci_get_route(&bdaddr);
+        bdaddr_t *ba = strtoba(hcia2str(hci, buf));
+        baswap(&bdaddr, ba);
+        bt_free(ba);
 
         if(opts.discovery)
             for(i = 0; i < num_rsp; i++)
@@ -421,6 +424,7 @@ static void usage(void)
            "     \t           reliability\n"
            "   -n\tnum        The number of dongles\n"
            "   -d\t           Show debug information\n"
+           "   -i\tdev        An HCI device number to use (e.g. 0 for hci0)\n"
            "   -s\t           Perform Bluetooth Discovery\n"
            "\n   -h              Display help\n\n"
            "The devices are assumed to be hci0 to hci(n) where (n) is the number\n"
@@ -462,9 +466,12 @@ int main(int argc, char **argv)
     opts.threads = 1;
     opts.random = 0;
 
+    //  Find the first HCI device on the system.  Zero is not a safe default.
+    opts.dev_id = hci_get_route(NULL);
+
     banner();
 
-    while ((opt=getopt(argc, argv, "Rdhsr:n:t:")) != -1)
+    while ((opt=getopt(argc, argv, "Rdhsr:n:t:i:")) != -1)
     {
         switch(opt)
         {
@@ -485,6 +492,10 @@ int main(int argc, char **argv)
             break;
         case 's':
             opts.discovery = 1;
+            break;
+        case 'i':
+            //  Override dev_id
+            opts.dev_id = atoi(optarg);
             break;
         case 'h':
         default:
@@ -572,6 +583,6 @@ int main(int argc, char **argv)
     {
         bdaddr_t ba;
 
-        hciScan(0, from, to, &total);
+        hciScan(opts.dev_id, from, to, &total);
     }
 }
