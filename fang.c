@@ -274,27 +274,36 @@ static void hciDiscovery(int dev_id)
 		         log_write(LOGTXTFILE, " Connected.\n");
 		      
 		      if (hci_read_remote_version(dd, handle, &version, opts.btout-5000) == 0) {
-			log_write(LOGSTDOUT, "\tLMP Version: %s (0x%x) LMP Subversion: 0x%x\n"
-				"\tManufacturer: %s (%d)\n",
-				lmp_vertostr(version.lmp_ver), version.lmp_ver, version.lmp_subver,					                            bt_compidtostr(version.manufacturer), version.manufacturer);
+               char * ver_str = lmp_vertostr(version.lmp_ver);
+               if(ver_str) {
+                  log_write(LOGSTDOUT, "\tLMP Version: %s (0x%x) LMP Subversion: 0x%x\n"
+                     "\tManufacturer: %s (%d)\n",
+                     ver_str, version.lmp_ver, version.lmp_subver, bt_compidtostr(version.manufacturer), version.manufacturer);
 		      	
-	      	      	if(output.logtype == LOGTXTFILE)
-			   log_write(LOGTXTFILE, "\tLMP Version: %s (0x%x) LMP Subversion: 0x%x\n"
-				"\tManufacturer: %s (%d)\n",
-				lmp_vertostr(version.lmp_ver), version.lmp_ver, version.lmp_subver,					                            bt_compidtostr(version.manufacturer), version.manufacturer);
-		      	
+                  if(output.logtype == LOGTXTFILE)
+                     log_write(LOGTXTFILE, "\tLMP Version: %s (0x%x) LMP Subversion: 0x%x\n"
+                        "\tManufacturer: %s (%d)\n",
+                        ver_str, version.lmp_ver, version.lmp_subver, bt_compidtostr(version.manufacturer), version.manufacturer);
+
+                  bt_free(ver_str);
+               }
 		      }
 
 		      if (hci_read_remote_features(dd, handle, features, opts.btout-5000) == 0) {
-		      	log_write(LOGSTDOUT, "\tFeatures: 0x%2.2x 0x%2.2x 0x%2.2x 0x%2.2x\n%s\n",
-				features[0], features[1], features[2], features[3],
-				lmp_featurestostr(features, "\t\t", 3));
+               char * feature_str = lmp_featurestostr(features, "\t\t", 63);
+               if(feature_str) {
+                  log_write(LOGSTDOUT, "\tFeatures: 0x%2.2x 0x%2.2x 0x%2.2x 0x%2.2x\n%s\n",
+                     features[0], features[1], features[2], features[3],
+                     feature_str);
 		      	
-	      	      	if(output.logtype == LOGTXTFILE)
-		      	   log_write(LOGTXTFILE, "\tFeatures: 0x%2.2x 0x%2.2x 0x%2.2x 0x%2.2x\n%s\n",
-				features[0], features[1], features[2], features[3],
-				lmp_featurestostr(features, "\t\t", 3));
-		      }
+                  if(output.logtype == LOGTXTFILE)
+                     log_write(LOGTXTFILE, "\tFeatures: 0x%2.2x 0x%2.2x 0x%2.2x 0x%2.2x\n%s\n",
+                        features[0], features[1], features[2], features[3],
+                        feature_str);
+
+                  bt_free(feature_str);
+               }
+            }
 		      if(cc)
       	      	      	hci_disconnect(dd, handle, 0x13, 10000);
 	      } else {
@@ -384,26 +393,35 @@ static void hciScan(int dev_id, HCIA from, HCIA to, int *total)
 		         log_write(LOGTXTFILE, " Connected.\n");
 		      
 		      if (hci_read_remote_version(dd, handle, &version, opts.btout-5000) == 0) {
-			log_write(LOGSTDOUT, "\tLMP Version: %s (0x%x) LMP Subversion: 0x%x\n"
-				"\tManufacturer: %s (%d)\n",
-				lmp_vertostr(version.lmp_ver), version.lmp_ver, version.lmp_subver,					                            bt_compidtostr(version.manufacturer), version.manufacturer);
-		      	
-	      	      	if(output.logtype == LOGTXTFILE)
-			   log_write(LOGTXTFILE, "\tLMP Version: %s (0x%x) LMP Subversion: 0x%x\n"
-				"\tManufacturer: %s (%d)\n",
-				lmp_vertostr(version.lmp_ver), version.lmp_ver, version.lmp_subver,					                            bt_compidtostr(version.manufacturer), version.manufacturer);
-		      	
+               char * ver_str = lmp_vertostr(version.lmp_ver);
+               if(ver_str) {
+                  log_write(LOGSTDOUT, "\tLMP Version: %s (0x%x) LMP Subversion: 0x%x\n"
+                     "\tManufacturer: %s (%d)\n",
+                     ver_str, version.lmp_ver, version.lmp_subver, bt_compidtostr(version.manufacturer), version.manufacturer);
+                  
+                  if(output.logtype == LOGTXTFILE)
+                     log_write(LOGTXTFILE, "\tLMP Version: %s (0x%x) LMP Subversion: 0x%x\n"
+                        "\tManufacturer: %s (%d)\n",
+                        ver_str, version.lmp_ver, version.lmp_subver, bt_compidtostr(version.manufacturer), version.manufacturer);
+
+                  bt_free(ver_str);
+               }
 		      }
 
 		      if (hci_read_remote_features(dd, handle, features, opts.btout-5000) == 0) {
-		      	log_write(LOGSTDOUT, "\tFeatures: 0x%2.2x 0x%2.2x 0x%2.2x 0x%2.2x\n%s\n",
-				features[0], features[1], features[2], features[3],
-				lmp_featurestostr(features, "\t\t", 3));
+               char * feature_str = lmp_featurestostr(features, "\t\t", 63);
+               if(feature_str) {
+                  log_write(LOGSTDOUT, "\tFeatures: 0x%2.2x 0x%2.2x 0x%2.2x 0x%2.2x\n%s\n",
+                     features[0], features[1], features[2], features[3],
+                     feature_str);
 		      	
-	      	      	if(output.logtype == LOGTXTFILE)
-		      	   log_write(LOGTXTFILE, "\tFeatures: 0x%2.2x 0x%2.2x 0x%2.2x 0x%2.2x\n%s\n",
-				features[0], features[1], features[2], features[3],
-				lmp_featurestostr(features, "\t\t", 3));
+                  if(output.logtype == LOGTXTFILE)
+                     log_write(LOGTXTFILE, "\tFeatures: 0x%2.2x 0x%2.2x 0x%2.2x 0x%2.2x\n%s\n",
+                        features[0], features[1], features[2], features[3],
+                        feature_str);
+
+                  bt_free(feature_str);
+               }
 		      }
 		      if(cc)
       	      	      	hci_disconnect(dd, handle, 0x13, 10000);
