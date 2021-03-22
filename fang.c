@@ -57,22 +57,7 @@ typedef __u64 HCIA;
 
 static char *version = { "2.5" };
 
-#define LOGSTDOUT	1
-#define LOGTXTFILE	2
-#define LOGOTHER	3
-
 static void usage(void);
-
-void log_open(int, char *);
-void log_flush(int);
-void log_close(int);
-void log_write(int, const char *, ...);
-
-struct {
-   char filename[PATH_MAX+1];
-   int logtype;
-   FILE *log_fd;
-} output;
 
 typedef struct {
    int random;
@@ -83,13 +68,12 @@ typedef struct {
 
 options opts;
 
-static void banner(int logtype) {
-
-   log_write(logtype, "redfang - the bluetooth hunter ver %s\n", version);
-   log_write(logtype, "(c)2003 @stake Inc\n");
-   log_write(logtype, "author:   Ollie Whitehouse <ollie@atstake.com>\n");
-   log_write(logtype, "enhanced: threads by Simon Halsall <s.halsall@eris.qinetiq.com>\n");
-   log_write(logtype, "enhanced: device info discovery by Stephen Kapp <skapp@atstake.com>\n");
+static void banner() {
+   printf("redfang - the bluetooth hunter ver %s\n", version);
+   printf("(c)2003 @stake Inc\n");
+   printf("author:   Ollie Whitehouse <ollie@atstake.com>\n");
+   printf("enhanced: threads by Simon Halsall <s.halsall@eris.qinetiq.com>\n");
+   printf("enhanced: device info discovery by Stephen Kapp <skapp@atstake.com>\n");
 
 }
 
@@ -191,27 +175,16 @@ static void hciDiscovery(int dev_id)
 
 	hciReset(dev_id, dd);
 	
-	log_write(LOGSTDOUT, "Performing Bluetooth Discovery...");
-
-	if(output.logtype == LOGTXTFILE)
-	   log_write(LOGTXTFILE, "Performing Bluetooth Discovery...");
-
-	log_flush(LOGSTDOUT);
+	printf("Performing Bluetooth Discovery...");
 
 	length  = 8;  /* ~10 seconds */
 	flags = IREQ_CACHE_FLUSH;
 	
 	num_rsp = hci_inquiry(dev_id, length, num_rsp, NULL, &info, flags);
 	if(num_rsp < 0) {
-	   log_write(LOGSTDOUT, " Inquiry failed.\n");
-	   
-	   if(output.logtype == LOGTXTFILE)
-	      log_write(LOGTXTFILE, " Inquiry failed.\n");
+	   printf(" Inquiry failed.\n");
 	} else {
-	   log_write(LOGSTDOUT, " Completed.\n");
-	   
-	   if(output.logtype == LOGTXTFILE)
-	      log_write(LOGTXTFILE, " Completed.\n");
+	   printf(" Completed.\n");
 	}
 	
         for(i = 0; i < num_rsp; i++) {
@@ -219,14 +192,9 @@ static void hciDiscovery(int dev_id)
 	   if (hci_read_remote_name(dd, &(info+i)->bdaddr, sizeof(name), name, opts.btout) == 0) {
 	      baswap(&bdaddr, &(info+i)->bdaddr);
 	      
-	      log_write(LOGSTDOUT, "Discovered: %s [%s]\n", name, batostr(&bdaddr));
-	      log_write(LOGSTDOUT, "Getting Device Information..");
+	      printf("Discovered: %s [%s]\n", name, batostr(&bdaddr));
+	      printf("Getting Device Information..");
 	      
-	      if(output.logtype == LOGTXTFILE) {
-	        log_write(LOGTXTFILE, "Discovered: %s [%s]\n", name, batostr(&bdaddr));
-	      	log_write(LOGTXTFILE, "Getting Device Information..");
-	      }
-
 	      handle = 0;
 	      if (hci_create_connection(dd, &(info+i)->bdaddr, 0x0008 | 0x0010, 0, 0, &handle, opts.btout) < 0) {
 		      cr = malloc(sizeof(*cr) + sizeof(struct hci_conn_info));
@@ -242,23 +210,15 @@ static void hciDiscovery(int dev_id)
 	      }	
 	      
 	      if(handle != 0) {
-		      log_write(LOGSTDOUT, " Connected.\n");
-		      
-	      	      if(output.logtype == LOGTXTFILE)
-		         log_write(LOGTXTFILE, " Connected.\n");
+		      printf(" Connected.\n");
 		      
 		      if (hci_read_remote_version(dd, handle, &version, opts.btout-5000) == 0) {
                char * ver_str = lmp_vertostr(version.lmp_ver);
                if(ver_str) {
-                  log_write(LOGSTDOUT, "\tLMP Version: %s (0x%x) LMP Subversion: 0x%x\n"
+                  printf("\tLMP Version: %s (0x%x) LMP Subversion: 0x%x\n"
                      "\tManufacturer: %s (%d)\n",
                      ver_str, version.lmp_ver, version.lmp_subver, bt_compidtostr(version.manufacturer), version.manufacturer);
 		      	
-                  if(output.logtype == LOGTXTFILE)
-                     log_write(LOGTXTFILE, "\tLMP Version: %s (0x%x) LMP Subversion: 0x%x\n"
-                        "\tManufacturer: %s (%d)\n",
-                        ver_str, version.lmp_ver, version.lmp_subver, bt_compidtostr(version.manufacturer), version.manufacturer);
-
                   bt_free(ver_str);
                }
 		      }
@@ -266,25 +226,17 @@ static void hciDiscovery(int dev_id)
 		      if (hci_read_remote_features(dd, handle, features, opts.btout-5000) == 0) {
                char * feature_str = lmp_featurestostr(features, "\t\t", 63);
                if(feature_str) {
-                  log_write(LOGSTDOUT, "\tFeatures: 0x%2.2x 0x%2.2x 0x%2.2x 0x%2.2x\n%s\n",
+                  printf("\tFeatures: 0x%2.2x 0x%2.2x 0x%2.2x 0x%2.2x\n%s\n",
                      features[0], features[1], features[2], features[3],
                      feature_str);
 		      	
-                  if(output.logtype == LOGTXTFILE)
-                     log_write(LOGTXTFILE, "\tFeatures: 0x%2.2x 0x%2.2x 0x%2.2x 0x%2.2x\n%s\n",
-                        features[0], features[1], features[2], features[3],
-                        feature_str);
-
                   bt_free(feature_str);
                }
             }
 		      if(cc)
       	      	      	hci_disconnect(dd, handle, 0x13, 10000);
 	      } else {
-		      log_write(LOGSTDOUT, " Failed.\n");
-	      	      
-		      if(output.logtype == LOGTXTFILE)
-		         log_write(LOGTXTFILE, " Failed.\n");
+		      printf(" Failed.\n");
 	      }
 	   }
 	}
@@ -318,12 +270,11 @@ static void hciScan(int dev_id, HCIA from, HCIA to, int *total)
    
    do {
       skip = 0;
-      if (!DEBUG)
-      log_write(LOGSTDOUT, "Done %d - %s                     \r", *total, hcia2str(hci, buf)); fflush(stdout);
+      if (!DEBUG) {
+         printf("Done %d - %s                     \r", *total, hcia2str(hci, buf));
+         fflush(stdout);
+      }
 
-      if ((!DEBUG) && (output.logtype == LOGTXTFILE))
-         log_write(LOGTXTFILE, "Done %d - %s\n", *total, hcia2str(hci, buf)); log_flush(LOGTXTFILE);
-      
       baswap(&bdaddr, strtoba(hcia2str(hci, buf)));
       //dev_id = hci_get_route(&bdaddr);
 
@@ -338,14 +289,9 @@ static void hciScan(int dev_id, HCIA from, HCIA to, int *total)
 	 continue;
       
       if (hci_read_remote_name(dd,&bdaddr,sizeof(name), name, opts.btout) == 0) {
-	      log_write(LOGSTDOUT, "Found: %s [%s]\n", name, hcia2str(hci, buf));
-	      log_write(LOGSTDOUT, "Getting Device Information..");
+	      printf("Found: %s [%s]\n", name, hcia2str(hci, buf));
+	      printf("Getting Device Information..");
 	      
-	      if(output.logtype == LOGTXTFILE) {
-	        log_write(LOGTXTFILE, "Found: %s [%s]\n", name, hcia2str(hci, buf));
-	      	log_write(LOGTXTFILE, "Getting Device Information..");
-	      }
-
 	      handle = 0;
 	      if (hci_create_connection(dd, &bdaddr, 0x0008 | 0x0010, 0, 0, &handle, opts.btout) < 0) {
 		      cr = malloc(sizeof(*cr) + sizeof(struct hci_conn_info));
@@ -361,23 +307,15 @@ static void hciScan(int dev_id, HCIA from, HCIA to, int *total)
 	      }	
 	      
 	      if(handle != 0) {
-		      log_write(LOGSTDOUT, " Connected.\n");
-		      
-	      	      if(output.logtype == LOGTXTFILE)
-		         log_write(LOGTXTFILE, " Connected.\n");
+		      printf(" Connected.\n");
 		      
 		      if (hci_read_remote_version(dd, handle, &version, opts.btout-5000) == 0) {
                char * ver_str = lmp_vertostr(version.lmp_ver);
                if(ver_str) {
-                  log_write(LOGSTDOUT, "\tLMP Version: %s (0x%x) LMP Subversion: 0x%x\n"
+                  printf("\tLMP Version: %s (0x%x) LMP Subversion: 0x%x\n"
                      "\tManufacturer: %s (%d)\n",
                      ver_str, version.lmp_ver, version.lmp_subver, bt_compidtostr(version.manufacturer), version.manufacturer);
                   
-                  if(output.logtype == LOGTXTFILE)
-                     log_write(LOGTXTFILE, "\tLMP Version: %s (0x%x) LMP Subversion: 0x%x\n"
-                        "\tManufacturer: %s (%d)\n",
-                        ver_str, version.lmp_ver, version.lmp_subver, bt_compidtostr(version.manufacturer), version.manufacturer);
-
                   bt_free(ver_str);
                }
 		      }
@@ -385,36 +323,23 @@ static void hciScan(int dev_id, HCIA from, HCIA to, int *total)
 		      if (hci_read_remote_features(dd, handle, features, opts.btout-5000) == 0) {
                char * feature_str = lmp_featurestostr(features, "\t\t", 63);
                if(feature_str) {
-                  log_write(LOGSTDOUT, "\tFeatures: 0x%2.2x 0x%2.2x 0x%2.2x 0x%2.2x\n%s\n",
+                  printf("\tFeatures: 0x%2.2x 0x%2.2x 0x%2.2x 0x%2.2x\n%s\n",
                      features[0], features[1], features[2], features[3],
                      feature_str);
 		      	
-                  if(output.logtype == LOGTXTFILE)
-                     log_write(LOGTXTFILE, "\tFeatures: 0x%2.2x 0x%2.2x 0x%2.2x 0x%2.2x\n%s\n",
-                        features[0], features[1], features[2], features[3],
-                        feature_str);
-
                   bt_free(feature_str);
                }
 		      }
 		      if(cc)
       	      	      	hci_disconnect(dd, handle, 0x13, 10000);
 	      } else {
-		      log_write(LOGSTDOUT, " Failed.\n");
-	      	      
-		      if(output.logtype == LOGTXTFILE)
-		         log_write(LOGTXTFILE, " Failed.\n");
+		      printf(" Failed.\n");
 	      }
       }
 
       if (DEBUG) {
-         log_write(LOGSTDOUT, "Done[dev %d][total %d] - ", dev_id, *total);
-         log_write(LOGSTDOUT, "%s    \n", hcia2str(hci, buf)); fflush(stdout);
-         
-	 if(output.logtype == LOGTXTFILE) {
-	    log_write(LOGTXTFILE, "Done[dev %d][total %d] - ", dev_id, *total);
-            log_write(LOGTXTFILE, "%s    \n", hcia2str(hci, buf)); fflush(stdout);
-         }
+         printf("Done[dev %d][total %d] - ", dev_id, *total);
+         printf("%s    \n", hcia2str(hci, buf)); fflush(stdout);
       }
 
       fflush(stdout);
@@ -443,7 +368,6 @@ static void usage(void)
           "   fang [options]\n\n");
    printf("options:\n"
           "   -r\trange      i.e. 00803789EE76-00803789EEff\n"
-          "   -o\tfilename   Output Scan to Text Logfile\n"
           "   -t\ttimeout    The connect timeout, this is 10000 by default\n"
 	  "     \t           Which is quick and yields results, increase for\n"
 	  "     \t           reliability\n"
@@ -473,77 +397,6 @@ int splitRange(char *range, HCIA *from, HCIA *to)
    str2hcia(ptr, to);
 }
 
-void log_open(int logtype, char *filename) {
-
-   if(logtype != LOGTXTFILE) {
-      return;
-   }
-  
-   log_write(LOGSTDOUT, "Opening logfile %s.\n", filename);
-   
-   output.log_fd = fopen(filename, "w");
-
-   if(!output.log_fd) {
-	   perror("Unable to open Log file: ");
-	   exit(-1);
-   }
-
-   strncpy(output.filename, filename, PATH_MAX);
-   output.logtype = logtype;
-}
-
-
-void log_close(int logtype) {
-
-	fclose(output.log_fd);
-}
-
-void log_flush(int logtype) {
-	switch(logtype) {
-	case LOGSTDOUT:
-	   fflush(stdout);
-	   break;
-	case LOGTXTFILE:
-	   fflush(output.log_fd);
-	   break;
-	default:
-	   break;
-	}
-}
-
-void log_write(int logtype, const char *fmt, ...) {
-	va_list ap;
-	char *buf;
-	int bufsiz = 4096;
-	int buf_alloced = 0, rc = 0, writen = 0;
-
-	va_start(ap, fmt);
-
-	if(logtype == LOGSTDOUT) {
-		vfprintf(stdout, fmt, ap);
-	}
-
-	if(logtype == LOGTXTFILE) {
-		buf = (char *) calloc(bufsiz, sizeof(char));
-		buf_alloced = 1;
-		
-		do {
-		   rc = vsnprintf(buf,bufsiz, fmt, ap);
-		   if( rc>= 0 && rc < bufsiz) 
-			   break;
-		   bufsiz = (rc > bufsiz) ? rc + 1 : bufsiz * 2;
-		   buf = (char *) realloc(buf, bufsiz);
-		} while(1);
-	
-		writen = fwrite(buf, 1, strlen(buf), output.log_fd);
-	}
-	
-	va_end(ap);
-
-	if(buf_alloced)
-		free(buf);
-}
-
 int main(int argc, char **argv)
 {
    int opt, i;
@@ -555,20 +408,14 @@ int main(int argc, char **argv)
    extern char *optarg;
    int loghandle;
 
-   output.logtype = 0;
-  
    opts.btout = 25000;
    opts.threads = 1;
    opts.random = 0;
    
+   banner();
    
-   banner(LOGSTDOUT);
-   
-   while ((opt=getopt(argc, argv, "Rdhsr:n:t:o:")) != -1) {
+   while ((opt=getopt(argc, argv, "Rdhsr:n:t:")) != -1) {
       switch(opt) {
-	 case 'o':
-	    log_open(LOGTXTFILE, optarg);
-	    break;
          case 't':
             opts.btout = atoi(optarg);
             break;
@@ -600,19 +447,10 @@ int main(int argc, char **argv)
       from = tmp;
    }
 
-   log_write(LOGSTDOUT, "Scanning %llu address(es)\n",(unsigned long long)(to - from + 1));
-   log_write(LOGSTDOUT, "Address range %s", hcia2str(from, NULL));
-   log_write(LOGSTDOUT, " -> %s\n", hcia2str(to, NULL));
+   printf("Scanning %llu address(es)\n",(unsigned long long)(to - from + 1));
+   printf("Address range %s", hcia2str(from, NULL));
+   printf(" -> %s\n", hcia2str(to, NULL));
 
-   if(output.logtype == LOGTXTFILE) {
-	banner(LOGTXTFILE);
-   	log_write(LOGTXTFILE, "Scanning %llu address(es)\n",(unsigned long long)(to - from + 1));
-   	log_write(LOGTXTFILE, "Address range %s", hcia2str(from, NULL));
-   	log_write(LOGTXTFILE, " -> %s\n", hcia2str(to, NULL));
-   	
-	log_flush(LOGTXTFILE);
-   }
-   
    if(opts.discovery)
       hciDiscovery(0);
    
@@ -627,15 +465,13 @@ int main(int argc, char **argv)
 
       if (threads > num) {
 	 threads = opts.threads = num;
-         log_write(LOGSTDOUT, "Reducing to %d threads\n", threads);
+         printf("Reducing to %d threads\n", threads);
       }
 
       split = ((num)/threads);
 
-      log_write(LOGSTDOUT, "Using %d threads with approx %d addresses each\n", threads, split);
+      printf("Using %d threads with approx %d addresses each\n", threads, split);
 
-      log_flush(LOGSTDOUT);
-      
       for(count = 0; count < threads; count++) {
 	 HCIA lfrom = last;
 	 HCIA lto;
@@ -678,7 +514,4 @@ int main(int argc, char **argv)
 
       hciScan(0, from, to, &total);
    }
-
-   if(output.logtype == LOGTXTFILE)
-	   log_close(LOGTXTFILE);
 }
