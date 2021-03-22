@@ -1,7 +1,7 @@
 OBJ=fang.o
 EXE=fang
 
-DEPS=list.h
+DEPS=
 
 LIBS=-lbluetooth -lpthread
 

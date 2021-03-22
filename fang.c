@@ -50,8 +50,6 @@
 #include <bluetooth/hci.h>
 #include <bluetooth/hci_lib.h>
 
-#include "list.h"
-
 #define PATH_MAX 1024
 
 int DEBUG = 0;
@@ -93,30 +91,6 @@ static void banner(int logtype) {
    log_write(logtype, "enhanced: threads by Simon Halsall <s.halsall@eris.qinetiq.com>\n");
    log_write(logtype, "enhanced: device info discovery by Stephen Kapp <skapp@atstake.com>\n");
 
-}
-
-void printManf () {
-   int i;
-   
-   printf("Valid manf codes are:\n");
-   for (i=0; manf[i].name; i++) {
-      printf("\t%-15s %-8s", manf[i].name, manf[i].addr);
-      if (manf[i].desc) printf(manf[i].desc);
-      printf("\n");
-   }
-}
-
-char * findManf (char *name) 
-{
-   int i;
-
-   for (i=0; manf[i].name != NULL; i++) {
-      if (strncmp(manf[i].name, name, strlen(manf[i].name))) continue;
-
-      return(manf[i].addr);
-   }
-
-   return(NULL);
 }
 
 char * hcia2str(HCIA a, char *buf) 
@@ -470,56 +444,16 @@ static void usage(void)
    printf("options:\n"
           "   -r\trange      i.e. 00803789EE76-00803789EEff\n"
           "   -o\tfilename   Output Scan to Text Logfile\n"
-	  "     \t           An address can also be manf+nnnnnn, where manf\n"
-	  "     \t           is listed with the -l option and nnnnnn is the\n"
-	  "     \t           tail of the address. All addresses must be 12\n"
-	  "     \t           characters long\n"
           "   -t\ttimeout    The connect timeout, this is 10000 by default\n"
 	  "     \t           Which is quick and yields results, increase for\n"
 	  "     \t           reliability\n"
           "   -n\tnum        The number of dongles\n"
           "   -d\t           Show debug information\n"            
           "   -s\t           Perform Bluetooth Discovery\n"            
-          "   -l\t           Show device manufacturer codes\n"            
           "\n   -h              Display help\n\n"
           "The devices are assumed to be hci0 to hci(n) where (n) is the number\n"
 	  "of threads -1, this is currently not configurable but maybe at a\n"
 	  "later date\n");
-}
-
-char * expand(char *addr) 
-{
-   static char ret[24];
-   char buf[24], tail[24], head[24];
-   char *ptr = buf;
-   char *ptr2 = NULL;
-
-   strncpy(buf, addr, sizeof(buf));
-   strncpy(head, addr, sizeof(head));
-   tail[0] = '\0';
-
-   while(*ptr != '\0') {
-      if (*ptr == '+') {
-         *ptr = '\0';
-	 ptr2 = findManf(buf);
-	 if (ptr2 == NULL) {
-	    printManf();
-	    printf("\nManf not found %s\n", buf);
-	    exit(-1);
-	 }
-	 strncpy(head, ptr2, sizeof(head));
-	 strncpy(tail, ptr+1, sizeof(tail));
-      }
-      ptr++;
-   }
-   
-   snprintf(ret, sizeof(ret), "%s%s", head, tail);
-
-   if (strlen(ret) != 12) {
-      printf("Address `%s' to short, should be 12 chars long\n", ret);
-      exit(-1);
-   }
-   return(ret);
 }
 
 int splitRange(char *range, HCIA *from, HCIA *to) 
@@ -535,10 +469,8 @@ int splitRange(char *range, HCIA *from, HCIA *to)
       ptr++;
    }
 
-   str2hcia(expand(range), from);
-   str2hcia(expand(ptr), to);
-   //str2hcia(range, from);
-   //str2hcia(ptr, to);
+   str2hcia(range, from);
+   str2hcia(ptr, to);
 }
 
 void log_open(int logtype, char *filename) {
@@ -632,7 +564,7 @@ int main(int argc, char **argv)
    
    banner(LOGSTDOUT);
    
-   while ((opt=getopt(argc, argv, "Rldhsr:n:t:o:")) != -1) {
+   while ((opt=getopt(argc, argv, "Rdhsr:n:t:o:")) != -1) {
       switch(opt) {
 	 case 'o':
 	    log_open(LOGTXTFILE, optarg);
@@ -642,10 +574,6 @@ int main(int argc, char **argv)
             break;
 	 case 'R':
 	    opts.random = 1;
-	    break;
-         case 'l':
-	    printManf();
-	    exit(0);
 	    break;
          case 'd':
 	    DEBUG = 1;
